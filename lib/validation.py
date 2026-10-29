@@ -11,12 +11,33 @@ def validate_question_payload(payload):
         (None, error_dict) when invalid
     """
 
-    # TODO: Reject non-dictionary payloads.
-    # TODO: Require a "question" field.
-    # TODO: Require the question to be a string.
-    # TODO: Strip whitespace.
-    # TODO: Reject blank questions.
-    # TODO: Reject questions shorter than MIN_QUESTION_LENGTH.
-    # TODO: Reject questions longer than MAX_QUESTION_LENGTH.
-    # TODO: Return (question, None) when valid.
-    raise NotImplementedError("Complete request validation.")
+    def invalid(code, message):
+        return None, {"error": code, "message": message}
+
+    if not isinstance(payload, dict):
+        return invalid("invalid_request", "Request body must be a JSON object.")
+
+    if "question" not in payload:
+        return invalid("missing_question", "The 'question' field is required.")
+
+    question = payload["question"]
+    if not isinstance(question, str):
+        return invalid("invalid_question", "The 'question' field must be a string.")
+
+    question = question.strip()
+    if not question:
+        return invalid("empty_question", "The 'question' field cannot be blank.")
+
+    if len(question) < MIN_QUESTION_LENGTH:
+        return invalid(
+            "short_question",
+            f"The 'question' field must be at least {MIN_QUESTION_LENGTH} characters long.",
+        )
+
+    if len(question) > MAX_QUESTION_LENGTH:
+        return invalid(
+            "long_question",
+            f"The 'question' field must be {MAX_QUESTION_LENGTH} characters or fewer.",
+        )
+
+    return question, None

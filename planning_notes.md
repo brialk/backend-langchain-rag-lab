@@ -1,62 +1,27 @@
-# Planning Notes: LangChain RAG API
+# Planning Notes: LangChain RAG Runbook API
 
-Complete each section before submitting. Replace every TODO with your own notes.
+## Who does the endpoint support?
+On-call engineers and incident responders on the platform/reliability team who need fast, trustworthy runbook guidance during an incident.
 
-## 1. System Goal
+## What business or reliability problem does it solve?
+During an outage people lose time searching many runbooks. The endpoint retrieves the right approved runbook chunks and summarizes them, which shortens time to mitigation and keeps responses consistent.
 
-- User or role: TODO
-- Business problem: TODO
-- Approved knowledge source: TODO
-- Endpoint route: TODO
+## Why should the model answer come from the approved runbook context?
+Models can invent plausible but wrong steps. Restricting answers to retrieved, approved runbook text keeps advice accurate, auditable (each answer lists its sources), and safe to follow in an incident.
 
-## 2. Manual RAG Workflow Map
+## What should a successful response include?
+- `answer`: a concise answer based only on the retrieved context
+- `sources`: metadata (source_id, title, category, section, chunk_id, distance), never the full text
+- `langchain`: debug info (chain expression, components, retrieved count/ids, top_k, context size, fallback flag, score type)
 
-Name the manual RAG steps this LangChain version is organizing.
+## What should the system do when no approved context is available?
+Do not call the model. Return the safe fallback answer ("I do not have enough approved runbook context to answer that reliably."), an empty `sources` list, and `langchain.fallback = true`.
 
-- Receive question: TODO
-- Retrieve context: TODO
-- Build prompt: TODO
-- Call model: TODO
-- Parse or format output: TODO
-- Return sources: TODO
-- Verify quality: TODO
-
-## 3. LangChain Component Mapping
-
-Map the manual workflow to LangChain-supported pieces.
-
-- Prompt string maps to: TODO
-- Chroma search logic maps to: TODO
-- Direct model call maps to: TODO
-- Function-to-function workflow maps to: TODO
-- Manual output cleanup maps to: TODO
-- Manual testing maps to: TODO
-
-## 4. Response Contract
-
-List the fields a successful response should include.
-
-- TODO
-- TODO
-- TODO
-
-## 5. Fallback Behavior
-
-Explain what the system should do when no approved context is available.
-
-TODO
-
-## 6. Verification Plan
-
-List at least four checks you should run before trusting the refactor.
-
-- TODO
-- TODO
-- TODO
-- TODO
-
-## 7. Reflection
-
-Explain what LangChain simplified and what may be harder to inspect.
-
-TODO
+## Manual RAG workflow mapping
+1. Receive the question -> `lib/validation.py` + Flask route
+2. Retrieve context -> `lib/vector_store.py`
+3. Build the prompt -> `lib/prompt_templates.py`
+4. Call the model -> `ChatOllama` in `lib/langchain_rag_service.py`
+5. Parse/format output -> `StrOutputParser` + `lib/response_formatter.py`
+6. Return sources -> `format_sources`
+7. Verify quality -> pytest suite
